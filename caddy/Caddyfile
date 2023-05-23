@@ -15,6 +15,7 @@
 {$TLS_DOMAINS} {
 
   encode gzip
+  tls internal
   reverse_proxy webserver:8000
 
   # # Static content
