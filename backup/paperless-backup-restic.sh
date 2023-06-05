@@ -18,8 +18,8 @@ export AZURE_ACCOUNT_NAME="${PAPERLESS_AZURE_ACCOUNT_NAME:-accountname}"
 export AZURE_ACCOUNT_KEY="${PAPERLESS_AZURE_ACCOUNT_KEY:-changeMe}"
 
 # script ----------------------------------------------------------------------
-printf "################################################################################\n" >> ${LOGFILE}
-echo "-- Paperless backup " `date --utc +%FT%TZ` "-----------------------------" >> ${LOGFILE} 2>&1
+printf "\n\n################################################################################\n" >> ${LOGFILE}
+printf "  Paperless backup  `date --utc +%FT%TZ`\n" >> ${LOGFILE} 2>&1
 printf "################################################################################\n\n" >> ${LOGFILE}
 
 # Create paperless export
