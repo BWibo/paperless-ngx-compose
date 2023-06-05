@@ -18,11 +18,11 @@ export AZURE_ACCOUNT_NAME="${PAPERLESS_AZURE_ACCOUNT_NAME:-accountname}"
 export AZURE_ACCOUNT_KEY="${PAPERLESS_AZURE_ACCOUNT_KEY:-changeMe}"
 
 # script ----------------------------------------------------------------------
-printf "\n\n" >> ${LOGFILE}
+printf "################################################################################\n" >> ${LOGFILE}
 echo "-- Paperless backup " `date --utc +%FT%TZ` "-----------------------------" >> ${LOGFILE} 2>&1
+printf "################################################################################\n\n" >> ${LOGFILE}
 
 # Create paperless export
-  restic backup --no-scan >> ${LOGFILE} 2>&1
 docker exec -i -t paperless-webserver-1 document_exporter ../export/backup >> ${LOGFILE} 2>&1
 
 errtmp=$?
