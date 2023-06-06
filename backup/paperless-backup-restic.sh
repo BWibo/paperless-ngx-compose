@@ -6,8 +6,8 @@
 # Note: Make sure export folder exists and restic repos are initialized!
 
 # config ----------------------------------------------------------------------
-PAPERLESS_BACKUP_PATHS="/media/paperless/export/backup /media/paperless/consume"
-LOGFILE="/media/paperless/export/backup.log"
+PAPERLESS_BACKUP_PATHS="${PAPERLESS_BACKUP_PATHS:-/media/paperless/export/backup /media/paperless/consume}"
+LOGFILE="${PAPERLESS_LOGFILE:-/media/paperless/export/backup.log}"
 ERR=0
 
 # Restic
@@ -23,14 +23,14 @@ printf "  Paperless backup  `date --utc +%FT%TZ`\n" >> ${LOGFILE} 2>&1
 printf "################################################################################\n\n" >> ${LOGFILE}
 
 # Create paperless export
-docker exec -i -t paperless-webserver-1 document_exporter ../export/backup >> ${LOGFILE} 2>&1
+docker exec -i paperless-webserver-1 document_exporter ../export/backup >> ${LOGFILE} 2>&1
 
 errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "create paperless export" $errtmp >> ${LOGFILE}
 
 # Create testic snapshot - local
-export RESTIC_REPOSITORY=/home/bruno/restic/paperless
+export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL:-/home/bruno/restic/paperless}"
 echo "$BACKUPDIR_DB_TEMP $PAPERLESS_BACKUP_PATHS" | \
   xargs \
   restic backup --no-scan >> ${LOGFILE} 2>&1
@@ -40,7 +40,7 @@ ERR=$(($ERR + $errtmp))
 echo "create restic snapshot - local" $errtmp >> ${LOGFILE} 2>&1
 
 # Create restic snapshot - Azure
-export RESTIC_REPOSITORY="azure:restic:/paperless"
+export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_AZURE:-azure:restic:/paperless}"
 echo "$BACKUPDIR_DB_TEMP $PAPERLESS_BACKUP_PATHS" | \
   xargs \
   restic backup --no-scan >> ${LOGFILE} 2>&1
