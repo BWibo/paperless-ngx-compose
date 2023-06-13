@@ -13,7 +13,7 @@ ERR=0
 # Restic
 export RESTIC_PASSWORD="${PAPERLESS_RESTIC_PASSWORD:-changeMe}"
 
-# Azure
+# Azure Storage Account name and key
 export AZURE_ACCOUNT_NAME="${PAPERLESS_AZURE_ACCOUNT_NAME:-accountname}"
 export AZURE_ACCOUNT_KEY="${PAPERLESS_AZURE_ACCOUNT_KEY:-changeMe}"
 
