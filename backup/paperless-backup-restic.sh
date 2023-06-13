@@ -57,16 +57,20 @@ echo "cleanup paperless export" $errtmp >> ${LOGFILE}
 
 # Cleanup restic repos
 # local
-export RESTIC_REPOSITORY=/home/bruno/restic/paperless
-restic forget --prune --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --keep-yearly 5 >> ${LOGFILE} 2>&1
+export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL:-/home/bruno/restic/paperless}"
+restic forget --prune \
+  --keep-within-daily 56d --keep-within-weekly 6m --keep-within-monthly 1y --keep-within-yearly 5y \
+  >> ${LOGFILE} 2>&1
 
 errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "cleanup restic snapshots - local " $errtmp >> ${LOGFILE}
 
 # Azure
-export RESTIC_REPOSITORY="azure:restic:/paperless"
-restic forget --prune --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --keep-yearly 2 >> ${LOGFILE} 2>&1
+export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_AZURE:-azure:restic:/paperless}"
+restic forget --prune \
+  --keep-within-daily 56d --keep-within-weekly 6m --keep-within-monthly 1y --keep-within-yearly 5y \
+  >> ${LOGFILE} 2>&1
 
 errtmp=$?
 ERR=$(($ERR + $errtmp))
