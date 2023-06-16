@@ -23,7 +23,7 @@ printf "  Paperless backup  `date --utc +%FT%TZ`\n" >> ${LOGFILE} 2>&1
 printf "################################################################################\n\n" >> ${LOGFILE}
 
 # Create paperless export
-docker exec -i paperless-webserver-1 document_exporter ../export/backup >> ${LOGFILE} 2>&1
+docker exec -i paperless-webserver-1 document_exporter -sm ../export/backup >> ${LOGFILE} 2>&1
 
 errtmp=$?
 ERR=$(($ERR + $errtmp))
