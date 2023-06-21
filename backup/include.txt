@@ -1,0 +1,8 @@
+# Paperless database backup export folder
+/media/paperless/export/backup
+
+# Paperlesscompose folder
+/media/paperless/consume
+
+# Paperless app folder
+/home/bruno/paperless-ngx-compose
