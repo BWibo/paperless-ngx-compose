@@ -77,7 +77,7 @@ services:
 
   # Postgres ------------------------------------------------------------------
   db:
-    image: docker.io/library/postgres:13
+    image: docker.io/library/postgres:15
     restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql/data
