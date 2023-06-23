@@ -20,7 +20,7 @@ export AZURE_ACCOUNT_KEY="${PAPERLESS_AZURE_ACCOUNT_KEY:-changeMe}"
 # script ----------------------------------------------------------------------
 ERR=0
 printf "\n\n" >> ${LOGFILE}
-echo "-- Nextcloud restic prune" `date --utc +%FT%TZ` "-----------------------------" \
+echo "-- Paperless restic prune" `date --utc +%FT%TZ` "-----------------------------" \
   >> ${LOGFILE}
 printf "\n\n" >> ${LOGFILE}
 
@@ -57,6 +57,6 @@ echo "check restic repo - Azure " $errtmp >> ${LOGFILE}
 
 printf "\n\n" >> ${LOGFILE}
 echo "Total ERR" $ERR >> ${LOGFILE}
-echo "-- Nextcloud restic prune" `date --utc +%FT%TZ` "done!-----------------------------" \
+echo "-- Paperless restic prune" `date --utc +%FT%TZ` "done!-----------------------------" \
   >> ${LOGFILE}
 printf "\n\n" >> ${LOGFILE}
