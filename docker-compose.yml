@@ -35,7 +35,41 @@ version: "3.4"
 # Volumes #####################################################################
 volumes:
   data:
+    # external: true
+
+  # Use this, if using bind mount
+  # data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: "${PWD}/data"
+
   media:
+    # external: true
+
+  # Use this, if using bind mount
+  # media:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: "${PWD}/media"
+
+  consume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${PWD}/consume"
+
+  export:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${PWD}/export"
+
   pgdata:
   redisdata:
   caddy_data:
@@ -111,8 +145,8 @@ services:
     volumes:
       - data:/usr/src/paperless/data
       - media:/usr/src/paperless/media
-      - ./export:/usr/src/paperless/export
-      - ./consume:/usr/src/paperless/consume
+      - export:/usr/src/paperless/export
+      - consume:/usr/src/paperless/consume
     env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379
