@@ -38,6 +38,7 @@ volumes:
     # external: true
 
   # Use this, if using bind mount
+  # !! Note: Folder (device) needs to exist on the host! Create if it's not there.
   # data:
   #   driver: local
   #   driver_opts:
@@ -49,6 +50,7 @@ volumes:
     # external: true
 
   # Use this, if using bind mount
+  # !! Note: Folder (device) needs to exist on the host! Create if it's not there.
   # media:
   #   driver: local
   #   driver_opts:
@@ -56,6 +58,7 @@ volumes:
   #     o: bind
   #     device: "${PWD}/media"
 
+  # !! Note: Folder (device) needs to exist on the host! Create if it's not there.
   consume:
     driver: local
     driver_opts:
