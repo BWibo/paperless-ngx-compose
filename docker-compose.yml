@@ -35,7 +35,44 @@ version: "3.4"
 # Volumes #####################################################################
 volumes:
   data:
+    # external: true
+
+  # Use this, if using bind mount
+  # !! Note: Folder (device) needs to exist on the host! Create if it's not there.
+  # data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: "${PWD}/data"
+
   media:
+    # external: true
+
+  # Use this, if using bind mount
+  # !! Note: Folder (device) needs to exist on the host! Create if it's not there.
+  # media:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: "${PWD}/media"
+
+  # !! Note: Folder (device) needs to exist on the host! Create if it's not there.
+  consume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${PWD}/consume"
+
+  export:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${PWD}/export"
+
   pgdata:
   redisdata:
   caddy_data:
@@ -45,7 +82,7 @@ networks:
   frontend:
     driver: bridge
   backend:
-      driver: bridge
+    driver: bridge
 
 # Services #####################################################################
 services:
@@ -59,6 +96,7 @@ services:
     environment:
       TLS_DOMAINS: "${TLS_DOMAINS:?TLS_DOMAINS not set}"
       ADMIN_EMAIL: "${ADMIN_EMAIL:?ADMIN_EMAIL not set}"
+      CADDY_TLS: "${CADDY_TLS}"
     networks:
       - frontend
       - backend
@@ -102,15 +140,16 @@ services:
     # ports:
     #   - "8000:8000"
     healthcheck:
-      test: ["CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000"]
+      test:
+        ["CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000"]
       interval: 30s
       timeout: 10s
       retries: 5
     volumes:
       - data:/usr/src/paperless/data
       - media:/usr/src/paperless/media
-      - ./export:/usr/src/paperless/export
-      - ./consume:/usr/src/paperless/consume
+      - export:/usr/src/paperless/export
+      - consume:/usr/src/paperless/consume
     env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379
@@ -118,6 +157,7 @@ services:
       PAPERLESS_TIKA_ENABLED: 1
       PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
       PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+      PAPERLESS_URL: ${PAPERLESS_URL:?PAPERLESS_URL not set}
 
   # Gotenberg -----------------------------------------------------------------
   gotenberg:
