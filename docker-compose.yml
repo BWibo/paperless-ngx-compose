@@ -96,7 +96,7 @@ services:
     environment:
       TLS_DOMAINS: "${TLS_DOMAINS:?TLS_DOMAINS not set}"
       ADMIN_EMAIL: "${ADMIN_EMAIL:?ADMIN_EMAIL not set}"
-      TLS_INTERNAL: "${TLS_INTERNAL}"
+      CADDY_TLS: "${CADDY_TLS}"
     networks:
       - frontend
       - backend

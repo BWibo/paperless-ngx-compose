@@ -13,7 +13,7 @@
 }
 
 {$TLS_DOMAINS} {
-  {$TLS_INTERNAL}
+  {$CADDY_TLS}
   encode gzip
   reverse_proxy webserver:8000
 }
