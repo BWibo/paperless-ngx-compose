@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# Crontab entry ---------------------------------------------------------------
+# Crontab entry ###############################################################
 # 0 4 * * * /path/to/paperless-backup-restic.sh >/dev/null 2>&1
 
 # Note: Make sure export folder exists and restic repos are initialized!
 
-# config ----------------------------------------------------------------------
+# config ######################################################################
 LOGFILE="${PAPERLESS_LOGFILE:-/media/paperless/export/backup.log}"
 
 # Restic
@@ -21,7 +21,7 @@ DRY_RUN="${PAPERLESS_RESTIC_DRY_RUN:-}"
 export AZURE_ACCOUNT_NAME="${PAPERLESS_AZURE_ACCOUNT_NAME:-accountname}"
 export AZURE_ACCOUNT_KEY="${PAPERLESS_AZURE_ACCOUNT_KEY:-changeMe}"
 
-# script ----------------------------------------------------------------------
+# script ######################################################################
 ERR=0
 printf "\n\n################################################################################\n" >> ${LOGFILE}
 printf "  Paperless backup  `date --utc +%FT%TZ`\n" >> ${LOGFILE} 2>&1
@@ -34,7 +34,7 @@ errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "create paperless export" $errtmp >> ${LOGFILE}
 
-# Create testic snapshot - local
+# Create testic snapshot - local ----------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL}"
 echo "$DRY_RUN" | xargs \
 restic backup --no-scan \
@@ -45,7 +45,7 @@ errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "create restic snapshot - local" $errtmp >> ${LOGFILE} 2>&1
 
-# Create restic snapshot - Azure
+# Create restic snapshot - Azure ----------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_AZURE}"
 echo "$DRY_RUN" | xargs \
 restic backup --no-scan \
@@ -56,13 +56,13 @@ errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "create restic snapshot - Azure" $errtmp >> ${LOGFILE}
 
-# Cleanup paperless export
+# Cleanup paperless export ####################################################
 rm -rf /media/paperless/export/backup/*
 errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "cleanup paperless export" $errtmp >> ${LOGFILE}
 
-# Cleanup restic repos
+# Cleanup restic repos --------------------------------------------------------
 # local
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL}"
 echo "$FORGET_POLICY" "$DRY_RUN" | xargs \

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-# Crontab entry ---------------------------------------------------------------
+# Crontab entry ###############################################################
 # 0 4 * * * $HOME/myzsh/tools/nextcloud/nextcloud-backup.sh >/dev/null 2>&1
 
-# config ----------------------------------------------------------------------
+# config ######################################################################
 # General settings
 LOGFILE="${PAPERLESS_BACKUP_LOGFILE:-/media/paperless/export/backup.log}"
 
@@ -17,15 +17,15 @@ DRY_RUN="${PAPERLESS_RESTIC_DRY_RUN:-}"
 export AZURE_ACCOUNT_NAME="${PAPERLESS_AZURE_ACCOUNT_NAME:-accountname}"
 export AZURE_ACCOUNT_KEY="${PAPERLESS_AZURE_ACCOUNT_KEY:-changeMe}"
 
-# script ----------------------------------------------------------------------
+# script ######################################################################
 ERR=0
 printf "\n\n" >> ${LOGFILE}
 echo "-- Paperless restic prune" `date --utc +%FT%TZ` "-----------------------------" \
   >> ${LOGFILE}
 printf "\n\n" >> ${LOGFILE}
 
-# Cleanup restic repos
-# local
+# Cleanup restic repos ########################################################
+# local -----------------------------------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL}"
 echo "$DRY_RUN"  | xargs \
 restic prune >> ${LOGFILE} 2>&1
@@ -40,7 +40,7 @@ errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "check restic repo - local " $errtmp >> ${LOGFILE}
 
-# Azure
+# Azure -----------------------------------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_AZURE}"
 echo "$DRY_RUN"  | xargs \
 restic prune >> ${LOGFILE} 2>&1
