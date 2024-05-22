@@ -30,8 +30,6 @@
 # For more extensive installation and update instructions, refer to the
 # documentation.
 
-version: "3.4"
-
 # Volumes #####################################################################
 volumes:
   data:
