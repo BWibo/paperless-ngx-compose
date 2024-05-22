@@ -174,5 +174,5 @@ services:
   tika:
     networks:
       - backend
-    image: ghcr.io/paperless-ngx/tika:${TKKA_VERSION:?TKKA_VERSION not set}
+    image: docker.io/apache/tika:${TKKA_VERSION:?TKKA_VERSION not set}
     restart: unless-stopped
