@@ -101,6 +101,10 @@ services:
     volumes:
       - caddy_data:/data
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # Broker ---------------------------------------------------------------------
   broker:
@@ -110,6 +114,10 @@ services:
       - redisdata:/data
     networks:
       - backend
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # Postgres ------------------------------------------------------------------
   db:
@@ -123,6 +131,10 @@ services:
       POSTGRES_PASSWORD: paperless
     networks:
       - backend
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # Paperless -----------------------------------------------------------------
   webserver:
@@ -156,6 +168,10 @@ services:
       PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
       PAPERLESS_TIKA_ENDPOINT: http://tika:9998
       PAPERLESS_URL: ${PAPERLESS_URL:?PAPERLESS_URL not set}
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # Gotenberg -----------------------------------------------------------------
   gotenberg:
@@ -169,6 +185,10 @@ services:
       - "gotenberg"
       - "--chromium-disable-javascript=true"
       - "--chromium-allow-list=file:///tmp/.*"
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
 
   # Tika ----------------------------------------------------------------------
   tika:
@@ -176,3 +196,7 @@ services:
       - backend
     image: docker.io/apache/tika:${TKKA_VERSION:?TKKA_VERSION not set}
     restart: unless-stopped
+    logging:
+      options:
+        max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
+        max-file: ${DOCKER_LOGGING_MAX_FILE:?DOCKER_LOGGING_MAX_FILE not set}
