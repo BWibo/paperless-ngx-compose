@@ -37,7 +37,10 @@ PAPERLESS_RESTIC_REPO_LOCAL="/media/intenso/restic/paperless"
 PAPERLESS_RESTIC_REPO_AZURE="azure:restic:/paperless"
 
 # Additional restic args
-# PAPERLESS_RESTIC_DRY_RUN="-vv --dry-run"
+# PAPERLESS_RESTIC_ARGS="-vv --dry-run"
+
+# Additional args for restic prune command
+# PAPERLESS_RESTIC_PRUNE_ARGS="-v"
 
 # Restic Azure account credentials
 PAPERLESS_AZURE_ACCOUNT_NAME="accountname"

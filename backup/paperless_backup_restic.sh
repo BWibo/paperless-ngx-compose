@@ -15,7 +15,7 @@ export RESTIC_PASSWORD="${PAPERLESS_RESTIC_PASSWORD:-changeMe}"
 FORGET_POLICY="${PAPERLESS_RESTIC_FORGET_POLICY:---keep-within-daily 7d --keep-within-weekly 6m}"
 RESTIC_REPOSITORY_LOCAL="${PAPERLESS_RESTIC_REPO_LOCAL:-/media/myhdd/restic/paperless}"
 RESTIC_REPOSITORY_AZURE="${PAPERLESS_RESTIC_REPO_AZURE:-azure:restic:/paperless}"
-DRY_RUN="${PAPERLESS_RESTIC_DRY_RUN:-}"
+RESTIC_ARGS="${PAPERLESS_RESTIC_ARGS:-}"
 
 # Azure Storage Account name and key
 export AZURE_ACCOUNT_NAME="${PAPERLESS_AZURE_ACCOUNT_NAME:-accountname}"
@@ -36,7 +36,7 @@ echo "create paperless export" $errtmp >> ${LOGFILE}
 
 # Create testic snapshot - local ----------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL}"
-echo "$DRY_RUN" | xargs \
+echo "$RESTIC_ARGS" | xargs \
 restic backup --no-scan \
   --files-from "${INCLUDE_FILE}" \
   --iexclude-file "${EXCLUDE_FILE}" >> ${LOGFILE} 2>&1
@@ -47,7 +47,7 @@ echo "create restic snapshot - local" $errtmp >> ${LOGFILE} 2>&1
 
 # Create restic snapshot - Azure ----------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_AZURE}"
-echo "$DRY_RUN" | xargs \
+echo "$RESTIC_ARGS" | xargs \
 restic backup --no-scan \
   --files-from "${INCLUDE_FILE}" \
   --iexclude-file "${EXCLUDE_FILE}" >> ${LOGFILE} 2>&1
@@ -65,7 +65,7 @@ echo "cleanup paperless export" $errtmp >> ${LOGFILE}
 # Cleanup restic repos --------------------------------------------------------
 # local
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL}"
-echo "$FORGET_POLICY" "$DRY_RUN" | xargs \
+echo "$FORGET_POLICY" "$RESTIC_ARGS" | xargs \
 restic forget >> ${LOGFILE} 2>&1
 
 errtmp=$?
@@ -74,7 +74,7 @@ echo "cleanup restic snapshots - local " $errtmp >> ${LOGFILE}
 
 # Azure
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_AZURE}"
-echo "$FORGET_POLICY" "$DRY_RUN" | xargs \
+echo "$FORGET_POLICY" "$RESTIC_ARGS" | xargs \
 restic forget >> ${LOGFILE} 2>&1
 
 errtmp=$?

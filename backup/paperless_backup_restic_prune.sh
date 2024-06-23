@@ -11,7 +11,7 @@ LOGFILE="${PAPERLESS_BACKUP_LOGFILE:-/media/paperless/export/backup.log}"
 export RESTIC_PASSWORD="${PAPERLESS_RESTIC_PASSWORD:-changeMe}"
 RESTIC_REPOSITORY_LOCAL="${PAPERLESS_RESTIC_REPO_LOCAL:-/media/myhdd/restic/nextcloud}"
 RESTIC_REPOSITORY_AZURE="${PAPERLESS_RESTIC_REPO_AZURE:-azure:restic:/nextcloud}"
-DRY_RUN="${PAPERLESS_RESTIC_DRY_RUN:-}"
+RESTIC_PRUNE_ARGS="${PAPERLESS_RESTIC_PRUNE_ARGS:-}"
 
 # Azure Storage Account name and key
 export AZURE_ACCOUNT_NAME="${PAPERLESS_AZURE_ACCOUNT_NAME:-accountname}"
@@ -27,7 +27,7 @@ printf "\n\n" >> ${LOGFILE}
 # Cleanup restic repos ########################################################
 # local -----------------------------------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_LOCAL}"
-echo "$DRY_RUN"  | xargs \
+echo "$RESTIC_PRUNE_ARGS"  | xargs \
 restic prune >> ${LOGFILE} 2>&1
 
 errtmp=$?
@@ -42,7 +42,7 @@ echo "check restic repo - local " $errtmp >> ${LOGFILE}
 
 # Azure -----------------------------------------------------------------------
 export RESTIC_REPOSITORY="${PAPERLESS_RESTIC_REPO_AZURE}"
-echo "$DRY_RUN"  | xargs \
+echo "$RESTIC_PRUNE_ARGS"  | xargs \
 restic prune >> ${LOGFILE} 2>&1
 
 errtmp=$?
