@@ -126,9 +126,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: paperless
-      POSTGRES_USER: paperless
-      POSTGRES_PASSWORD: paperless
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB not set}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER not set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD not set}
     networks:
       - backend
     logging:
@@ -163,11 +163,16 @@ services:
     env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379
-      PAPERLESS_DBHOST: db
       PAPERLESS_TIKA_ENABLED: 1
       PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
       PAPERLESS_TIKA_ENDPOINT: http://tika:9998
       PAPERLESS_URL: ${PAPERLESS_URL:?PAPERLESS_URL not set}
+      # Database settings
+      PAPERLESS_DBHOST: ${POSTGRES_HOST:?POSTGRES_HOST not set}
+      PAPERLESS_DBPORT: ${POSTGRES_PORT:?POSTGRES_PORT not set}
+      PAPERLESS_DBNAME: ${POSTGRES_DB:?POSTGRES_DB not set}
+      PAPERLESS_DBUSER: ${POSTGRES_USER:?POSTGRES_USER not set}
+      PAPERLESS_DBPASS: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD not set}
     logging:
       options:
         max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
