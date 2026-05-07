@@ -6,6 +6,9 @@
 # Note: Make sure export folder exists and restic repos are initialized!
 
 # config ######################################################################
+# Temp folder for backup data (db, export) before restic snapshots them
+BACKUP_TEMP_DIR="${PAPERLESS_BACKUP_TEMP_DIR:-/tmp/paperless/export}"
+
 LOGFILE="${PAPERLESS_LOGFILE:-/media/paperless/export/backup.log}"
 
 # Restic
@@ -27,8 +30,11 @@ printf "\n\n####################################################################
 printf "  Paperless backup  `date --utc +%FT%TZ`\n" >> ${LOGFILE} 2>&1
 printf "################################################################################\n\n" >> ${LOGFILE}
 
-# Create paperless export
-docker exec -i paperless-webserver-1 document_exporter -sm ../export/backup >> ${LOGFILE} 2>&1
+# Create temp folder
+mkdir -p "${BACKUP_TEMP_DIR}"
+
+# Create paperless export, check where export dir is mounted! Deault: /usr/src/paperless/export
+docker exec -i paperless-webserver-1 document_exporter -sm /usr/src/paperless/export >> ${LOGFILE} 2>&1
 
 errtmp=$?
 ERR=$(($ERR + $errtmp))
@@ -57,7 +63,7 @@ ERR=$(($ERR + $errtmp))
 echo "create restic snapshot - Azure" $errtmp >> ${LOGFILE}
 
 # Cleanup paperless export ####################################################
-rm -rf /media/paperless/export/backup/*
+rm -rf "${BACKUP_TEMP_DIR}"/*
 errtmp=$?
 ERR=$(($ERR + $errtmp))
 echo "cleanup paperless export" $errtmp >> ${LOGFILE}
