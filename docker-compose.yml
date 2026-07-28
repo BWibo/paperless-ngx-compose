@@ -81,6 +81,13 @@ networks:
     driver: bridge
   backend:
     driver: bridge
+    ipam:
+      config:
+        # Static subnet so Caddy gets a fixed IP for PAPERLESS_TRUSTED_PROXIES.
+        # ip_range confines Docker's dynamic pool to .1.0/24, leaving the low
+        # addresses (e.g. Caddy's fixed 172.28.0.2) free of collisions.
+        - subnet: 172.28.0.0/16
+          ip_range: 172.28.1.0/24
 
 # Services #####################################################################
 services:
@@ -96,11 +103,14 @@ services:
       ADMIN_EMAIL: "${ADMIN_EMAIL:?ADMIN_EMAIL not set}"
       CADDY_TLS: "${CADDY_TLS}"
     networks:
-      - frontend
-      - backend
+      frontend:
+      backend:
+        # Fixed IP so paperless can trust it as a proxy (PAPERLESS_TRUSTED_PROXIES).
+        ipv4_address: 172.28.0.2
     volumes:
       - caddy_data:/data
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./certs:/certs:ro
     logging:
       options:
         max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}
@@ -108,7 +118,7 @@ services:
 
   # Broker ---------------------------------------------------------------------
   broker:
-    image: docker.io/library/redis:${REDIS_VERSION:?REDIS_VERSION not set}
+    image: docker.io/valkey/valkey:${VALKEY_VERSION:?VALKEY_VERSION not set}
     restart: unless-stopped
     volumes:
       - redisdata:/data
@@ -126,6 +136,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
+      # postgres:18 changed its default PGDATA to /var/lib/postgresql/18/docker and
+      # moved its VOLUME to the parent dir. Pin PGDATA back to the classic path so the
+      # existing data volume (mounted at .../data) keeps working instead of being
+      # flagged as an "unused mount". Avoids a data relocation on upgrade.
+      PGDATA: /var/lib/postgresql/data
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB not set}
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER not set}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD not set}
@@ -163,14 +178,30 @@ services:
     env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_TRUSTED_PROXIES: 172.28.0.2
       PAPERLESS_DBHOST: db
       PAPERLESS_DBNAME: ${POSTGRES_DB:?POSTGRES_DB not set}
       PAPERLESS_DBUSER: ${POSTGRES_USER:?POSTGRES_USER not set}
       PAPERLESS_DBPASS: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD not set}
+      # Secrets injected from the gitignored .env (env_file can't substitute).
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:?PAPERLESS_SECRET_KEY not set}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:?PAPERLESS_ADMIN_PASSWORD not set}
       PAPERLESS_TIKA_ENABLED: 1
       PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
       PAPERLESS_TIKA_ENDPOINT: http://tika:9998
       PAPERLESS_URL: ${PAPERLESS_URL:?PAPERLESS_URL not set}
+      # --- Paperless AI (v3). Off unless PAPERLESS_AI_ENABLED=true in .env. ---
+      PAPERLESS_AI_ENABLED: ${PAPERLESS_AI_ENABLED:-false}
+      PAPERLESS_AI_LLM_BACKEND: ${PAPERLESS_AI_LLM_BACKEND:-ollama}
+      PAPERLESS_AI_LLM_ENDPOINT: ${PAPERLESS_AI_LLM_ENDPOINT:-}
+      PAPERLESS_AI_LLM_MODEL: ${PAPERLESS_AI_LLM_MODEL:-}
+      PAPERLESS_AI_LLM_API_KEY: ${PAPERLESS_AI_LLM_API_KEY:-}
+      PAPERLESS_AI_LLM_EMBEDDING_BACKEND: ${PAPERLESS_AI_LLM_EMBEDDING_BACKEND:-ollama}
+      PAPERLESS_AI_LLM_EMBEDDING_MODEL: ${PAPERLESS_AI_LLM_EMBEDDING_MODEL:-}
+      PAPERLESS_AI_LLM_ALLOW_INTERNAL_ENDPOINTS: ${PAPERLESS_AI_LLM_ALLOW_INTERNAL_ENDPOINTS:-false}
+      PAPERLESS_AI_LLM_OUTPUT_LANGUAGE: ${PAPERLESS_AI_LLM_OUTPUT_LANGUAGE:-de}
+      PAPERLESS_AI_LLM_REQUEST_TIMEOUT: ${PAPERLESS_AI_LLM_REQUEST_TIMEOUT:-300}
     logging:
       options:
         max-size: ${DOCKER_LOGGING_MAX_SIZE:?DOCKER_LOGGING_MAX_SIZE not set}

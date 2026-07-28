@@ -1,3 +1,9 @@
 # Paperless folders
 consume/
 export/
+
+# Local secrets & environment (use .env.example as the template)
+.env
+
+# Local TLS certificates (dev mkcert certs or real certs)
+certs/
