@@ -84,16 +84,23 @@ networks:
     ipam:
       config:
         # Static subnet so Caddy gets a fixed IP for PAPERLESS_TRUSTED_PROXIES.
-        # ip_range confines Docker's dynamic pool to .1.0/24, leaving the low
-        # addresses (e.g. Caddy's fixed 172.28.0.2) free of collisions.
-        - subnet: 172.28.0.0/16
-          ip_range: 172.28.1.0/24
+        # ip_range confines Docker's dynamic pool to a sub-range, leaving the low
+        # addresses (e.g. Caddy's fixed CADDY_BACKEND_IP) free of collisions.
+        # All three configurable via .env; defaults must stay mutually consistent
+        # (ip_range inside subnet, CADDY_BACKEND_IP inside subnet but outside
+        # ip_range).
+        - subnet: ${BACKEND_SUBNET:-172.28.0.0/16}
+          ip_range: ${BACKEND_IP_RANGE:-172.28.1.0/24}
 
 # Services #####################################################################
 services:
   # Caddy ---------------------------------------------------------------------
+  # Bundled reverse proxy (mode A). Gated behind the "local-proxy" profile so it
+  # can be disabled for an external proxy (mode B): clear COMPOSE_PROFILES in
+  # .env and the webserver's published port takes over. See .env.example.
   caddy:
     image: caddy:alpine
+    profiles: ["local-proxy"]
     restart: unless-stopped
     ports:
       - 80:80
@@ -106,7 +113,7 @@ services:
       frontend:
       backend:
         # Fixed IP so paperless can trust it as a proxy (PAPERLESS_TRUSTED_PROXIES).
-        ipv4_address: 172.28.0.2
+        ipv4_address: ${CADDY_BACKEND_IP:-172.28.0.2}
     volumes:
       - caddy_data:/data
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
@@ -162,8 +169,11 @@ services:
       - broker
       - gotenberg
       - tika
-    # ports:
-    #   - "8000:8000"
+    # Published host port. Unused loopback bind in mode A (Caddy reaches the
+    # webserver over the backend network); the ingress for an external proxy in
+    # mode B. Override the bind via PAPERLESS_WEBSERVER_BIND in .env.
+    ports:
+      - "${PAPERLESS_WEBSERVER_BIND:-127.0.0.1:8000}:8000"
     healthcheck:
       test:
         ["CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000"]
@@ -178,20 +188,20 @@ services:
     env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379
-      PAPERLESS_DBENGINE: postgresql
-      PAPERLESS_TRUSTED_PROXIES: 172.28.0.2
+      PAPERLESS_DBENGINE: ${PAPERLESS_DBENGINE:-postgresql}
+      PAPERLESS_TRUSTED_PROXIES: ${PAPERLESS_TRUSTED_PROXIES:-172.28.0.2}
       PAPERLESS_DBHOST: db
       PAPERLESS_DBNAME: ${POSTGRES_DB:?POSTGRES_DB not set}
       PAPERLESS_DBUSER: ${POSTGRES_USER:?POSTGRES_USER not set}
       PAPERLESS_DBPASS: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD not set}
-      # Secrets injected from the gitignored .env (env_file can't substitute).
       PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:?PAPERLESS_SECRET_KEY not set}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:-admin}
       PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:?PAPERLESS_ADMIN_PASSWORD not set}
+      PAPERLESS_ADMIN_MAIL: ${PAPERLESS_ADMIN_MAIL:-admin@example.com}
       PAPERLESS_TIKA_ENABLED: 1
       PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
       PAPERLESS_TIKA_ENDPOINT: http://tika:9998
       PAPERLESS_URL: ${PAPERLESS_URL:?PAPERLESS_URL not set}
-      # --- Paperless AI (v3). Off unless PAPERLESS_AI_ENABLED=true in .env. ---
       PAPERLESS_AI_ENABLED: ${PAPERLESS_AI_ENABLED:-false}
       PAPERLESS_AI_LLM_BACKEND: ${PAPERLESS_AI_LLM_BACKEND:-ollama}
       PAPERLESS_AI_LLM_ENDPOINT: ${PAPERLESS_AI_LLM_ENDPOINT:-}
