@@ -77,20 +77,44 @@ volumes:
 
 # Networks #####################################################################
 networks:
+  # Edge network, dual-stack (IPv4 + IPv6 ULA), with internet access. Carries
+  # Caddy, the webserver and the published host ports.
+  # Static subnets so Caddy gets fixed addresses for PAPERLESS_TRUSTED_PROXIES.
+  # ip_range confines Docker's dynamic pool to a sub-range, leaving the low
+  # addresses (e.g. Caddy's fixed CADDY_IP / CADDY_IP_V6) free of collisions.
+  # All configurable via .env; values must stay mutually consistent
+  # (ip_range inside subnet, CADDY_IP inside subnet but outside ip_range).
   frontend:
     driver: bridge
+    attachable: false
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: ${FRONTEND_SUBNET:?FRONTEND_SUBNET not set}
+          ip_range: ${FRONTEND_IP_RANGE:?FRONTEND_IP_RANGE not set}
+        - subnet: ${FRONTEND_SUBNET_V6:?FRONTEND_SUBNET_V6 not set}
+          ip_range: ${FRONTEND_IP_RANGE_V6:?FRONTEND_IP_RANGE_V6 not set}
+
+  # Backing services (db, broker, gotenberg, tika), dual-stack but internal:
+  # no route off the bridge in either direction. tika and gotenberg parse
+  # attacker-supplied documents, so denying them egress removes the callback /
+  # stage-2 download / direct exfiltration path after a parser compromise. It
+  # also keeps the unauthenticated valkey off the network Caddy sits on.
+  # The webserver is deliberately the only member of both networks; no fixed
+  # addresses are needed here, so no ip_range either.
+  # Measured scope: members get no default route at all. The docker host still
+  # has an address on the bridge and can reach them directly — internal is not a
+  # host-level firewall.
   backend:
     driver: bridge
+    internal: true
+    enable_ipv6: true
     ipam:
+      driver: default
       config:
-        # Static subnet so Caddy gets a fixed IP for PAPERLESS_TRUSTED_PROXIES.
-        # ip_range confines Docker's dynamic pool to a sub-range, leaving the low
-        # addresses (e.g. Caddy's fixed CADDY_BACKEND_IP) free of collisions.
-        # All three configurable via .env; defaults must stay mutually consistent
-        # (ip_range inside subnet, CADDY_BACKEND_IP inside subnet but outside
-        # ip_range).
-        - subnet: ${BACKEND_SUBNET:-172.28.0.0/16}
-          ip_range: ${BACKEND_IP_RANGE:-172.28.1.0/24}
+        - subnet: ${BACKEND_SUBNET:?BACKEND_SUBNET not set}
+        - subnet: ${BACKEND_SUBNET_V6:?BACKEND_SUBNET_V6 not set}
 
 # Services #####################################################################
 services:
@@ -109,11 +133,12 @@ services:
       TLS_DOMAINS: "${TLS_DOMAINS:?TLS_DOMAINS not set}"
       ADMIN_EMAIL: "${ADMIN_EMAIL:?ADMIN_EMAIL not set}"
       CADDY_TLS: "${CADDY_TLS}"
+    # Edge network only — Caddy can reach the webserver and nothing else.
     networks:
       frontend:
-      backend:
-        # Fixed IP so paperless can trust it as a proxy (PAPERLESS_TRUSTED_PROXIES).
-        ipv4_address: ${CADDY_BACKEND_IP:-172.28.0.2}
+        # Fixed IPs so paperless can trust it as a proxy (PAPERLESS_TRUSTED_PROXIES).
+        ipv4_address: ${CADDY_IP:?CADDY_IP not set}
+        ipv6_address: ${CADDY_IP_V6:?CADDY_IP_V6 not set}
     volumes:
       - caddy_data:/data
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
@@ -162,18 +187,27 @@ services:
   webserver:
     image: ghcr.io/paperless-ngx/paperless-ngx:${PAPERLESS_NGX_VERSION:?PAPERLESS_NGX_VERSION not set}
     restart: unless-stopped
+    # The only service on both networks: it needs egress (mail, AI endpoint) and
+    # reaches the backing services on the internal one. frontend is pinned as the
+    # primary endpoint so the published port and the default route come from it.
     networks:
-      - backend
+      frontend:
+        priority: 100
+      backend:
+        priority: 10
     depends_on:
       - db
       - broker
       - gotenberg
       - tika
     # Published host port. Unused loopback bind in mode A (Caddy reaches the
-    # webserver over the backend network); the ingress for an external proxy in
+    # webserver over the frontend network); the ingress for an external proxy in
     # mode B. Override the bind via PAPERLESS_WEBSERVER_BIND in .env.
+    # One mapping binds one address of one family, so v4 and v6 need separate
+    # entries. Comment out a line to publish on a single stack only.
     ports:
       - "${PAPERLESS_WEBSERVER_BIND:-127.0.0.1:8000}:8000"
+      - "${PAPERLESS_WEBSERVER_BIND_V6:-[::1]:8000}:8000"
     healthcheck:
       test:
         ["CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000"]
@@ -189,7 +223,14 @@ services:
     environment:
       PAPERLESS_REDIS: redis://broker:6379
       PAPERLESS_DBENGINE: ${PAPERLESS_DBENGINE:-postgresql}
-      PAPERLESS_TRUSTED_PROXIES: ${PAPERLESS_TRUSTED_PROXIES:-172.28.0.2}
+      # Mode A: both of Caddy's fixed addresses (CADDY_IP, CADDY_IP_V6) — which one
+      # paperless sees depends on the family Caddy dialed the upstream over.
+      PAPERLESS_TRUSTED_PROXIES: ${PAPERLESS_TRUSTED_PROXIES:?PAPERLESS_TRUSTED_PROXIES not set}
+      # Number of proxy HOPS, not addresses. paperless defaults it to the length of
+      # PAPERLESS_TRUSTED_PROXIES, so listing one proxy under two addresses (v4 + v6)
+      # makes allauth expect two X-Forwarded-For entries and every login returns 500
+      # ("ALLAUTH_TRUSTED_PROXY_COUNT does not match X-Forwarded-For"). Pin it.
+      PAPERLESS_ALLAUTH_TRUSTED_PROXY_COUNT: ${PAPERLESS_ALLAUTH_TRUSTED_PROXY_COUNT:-1}
       PAPERLESS_DBHOST: db
       PAPERLESS_DBNAME: ${POSTGRES_DB:?POSTGRES_DB not set}
       PAPERLESS_DBUSER: ${POSTGRES_USER:?POSTGRES_USER not set}
