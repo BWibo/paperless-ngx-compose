@@ -3,13 +3,21 @@
 * Backup to a local HDD
 * Backup to Azure Blog storage
 
-## Backup every night a 04:00
+## Backup every night at 03:30 (prune Sundays at 04:00)
 
-Add this to `crontab -e`.
+Add this to `crontab -e`. The jobs log to the systemd journal via `logger` (collected
+by the observability stack, which alerts on failed/missing runs) and keep the local
+log file via `tee`; `LOGFILE=/dev/stdout` redirects the scripts' internal `>>` appends
+into the pipe. Note the backup script reads `PAPERLESS_LOGFILE`, the prune script
+`PAPERLESS_BACKUP_LOGFILE`:
 
 ```text
-0 4 * * * /home/me/paperless-compose/paperless-backup-restic.sh >/dev/null 2>&1
+30 3 * * * PAPERLESS_LOGFILE=/dev/stdout /home/bruno/paperless-ngx-compose/backup/paperless_backup_restic.sh 2>&1 | tee -a /home/bruno/paperless-backup-restic.log | logger -t paperless-backup
+0 4 * * 0 PAPERLESS_BACKUP_LOGFILE=/dev/stdout /home/bruno/paperless-ngx-compose/backup/paperless_backup_restic_prune.sh 2>&1 | tee -a /home/bruno/paperless-backup-restic.log | logger -t paperless-prune
 ```
+
+The `logger -t` tags (`paperless-backup`, `paperless-prune`) are matched by the
+`backup_alerts` Loki rules in the home-monitoring-stack repo — keep them in sync.
 
 ## Example environment settings
 
