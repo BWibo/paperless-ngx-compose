@@ -50,9 +50,24 @@ The header comment block in `docker-compose.yml` is from upstream and partly sta
 
 Deployed hosts run this repo from a git checkout with their own `.env` and some intentional local drift in `docker-compose.yml` (external volumes, host bind paths). Hosts update via `git pull --rebase`, so keep changes to tracked files minimal and additive to avoid conflicts with that drift. Never edit files on the server directly.
 
-## Updating to new paperless versions
+## Updating paperless-ngx
 
-**Exactly follow this workflow, when updating to a new paperless-ngx version.**
+Follow these steps exactly. `<old-tag>` is `v` + the current `PAPERLESS_NGX_VERSION` in `.env.example`; `<new-tag>` is the latest release tag.
 
-1. Determine the latest paperless-ngx release version from the Github repo: <https://github.com/paperless-ngx/paperless-ngx/releases/latest> and adapt the version `.env.example`
-2. Check the online deployment example file for changes: <https://github.com/paperless-ngx/paperless-ngx/blob/{{LATEST_VERSION}}/docker/compose/docker-compose.postgres-tika.yml>. If there a version updates vor services, add them to `.env.example` and report them. If there are other significant changes to the `docker-compose.yml` file since the last release, report them and ask me what to do about them.
+1. **Bump paperless.** Get `<new-tag>` from `gh release view --repo paperless-ngx/paperless-ngx --json tagName`. Set `PAPERLESS_NGX_VERSION` in `.env.example` to it, without the `v` prefix.
+2. **Sync service images.** Fetch upstream's reference compose file at the new tag:
+   `gh api "repos/paperless-ngx/paperless-ngx/contents/docker/compose/docker-compose.postgres-tika.yml?ref=<new-tag>" -H "Accept: application/vnd.github.raw"`.
+   Compare its valkey, postgres, gotenberg and tika image tags with `VALKEY_VERSION`, `POSTGRES_VERSION`, `GOTENBERG_VERSION` and `TKKA_VERSION` in `.env.example`. Copy every tag that differs into `.env.example`.
+3. **Review upstream compose changes.** Make a blobless clone of upstream in a scratch directory `<upstream>`: `git clone --filter=blob:none --no-checkout https://github.com/paperless-ngx/paperless-ngx <upstream>`. Diff with it, not the GitHub compare API: that API returns at most 300 files, sorted by path, so translation churn silently pushes `src/` changes out of the list. List what changed under `docker/compose/`: `git -C <upstream> diff <old-tag> <new-tag> -- docker/compose/`. If a change goes beyond image tags (new or removed services, env vars, volumes, commands, healthchecks), stop and ask the user how to apply it before you touch `docker-compose.yml`.
+4. **Review config options.** Find every `PAPERLESS_*` option that was added, changed (default, meaning or format), renamed, deprecated or removed between the two tags. Use these sources:
+   - `git -C <upstream> diff <old-tag> <new-tag> -- docs/configuration.md src/paperless/settings/`;
+   - the notes of every release in between: `gh release list --repo paperless-ngx/paperless-ngx`, then `gh release view <tag> --json body`.
+
+   Check each change against what this stack sets: `docker-compose.env`, the webserver's `environment:` in `docker-compose.yml`, and `.env.example`. Flag every change that touches an option we set or a feature we use (Caddy and proxy trust, subpath, AI, the exporter used by `backup/`). Propose edits for those, and apply them only after the user agrees.
+5. **Validate** as described in "Validating changes".
+
+Done when:
+- `.env.example` has the new paperless version and every changed service tag;
+- your report lists each version bump (old → new);
+- your report lists each upstream compose change beyond image tags, or says there were none;
+- your report lists each config-option change, with the ones that affect this stack highlighted, or says there were none.
