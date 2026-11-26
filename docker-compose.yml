@@ -141,7 +141,10 @@ services:
         ipv6_address: ${CADDY_IP_V6:?CADDY_IP_V6 not set}
     volumes:
       - caddy_data:/data
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      # Mount the directory, not the file: git pull swaps the Caddyfile for a new
+      # inode, which a single-file bind mount never sees (reload would load the
+      # stale file).
+      - ./caddy:/etc/caddy:ro
       - ./certs:/certs:ro
     logging:
       options:
